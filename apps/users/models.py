@@ -1,8 +1,13 @@
 # Python modules
-from tabnanny import verbose
 from typing import Any
 # Django modules
-from django.db import models
+from django.db.models import (
+    CharField,
+    EmailField,
+    BooleanField,
+    ImageField,
+    DateTimeField,
+)
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -23,6 +28,10 @@ class UserManager(BaseUserManager):
     ):
         if not email:
             raise ValidationError(message="Email field is required")
+        if not first_name:
+            raise ValidationError(message="First name is required")
+        if not last_name:
+            raise ValidationError(message="Last name is required")
         new_user: "User" = self.model(
             email=self.normalize_email(email),
             password=password,
@@ -82,13 +91,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     FIRST_NAME_MAX_LENGHT = 50
     LAST_NAME_MAX_LENGHT = 50
 
-    email = models.EmailField(unique=True, verbose_name="Email address")
-    first_name = models.CharField(max_length=FIRST_NAME_MAX_LENGHT, verbose_name="First Name")
-    last_name = models.CharField(max_length=LAST_NAME_MAX_LENGHT, verbose_name="Last Name")
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(default=timezone.now)
-    avatar = models.ImageField(blank=True, null=True)
+    email = EmailField(unique=True, verbose_name="Email address")
+    first_name = CharField(max_length=FIRST_NAME_MAX_LENGHT, verbose_name="First Name")
+    last_name = CharField(max_length=LAST_NAME_MAX_LENGHT, verbose_name="Last Name")
+    is_active = BooleanField(default=True)
+    is_staff = BooleanField(default=False)
+    date_joined = DateTimeField(default=timezone.now)
+    avatar = ImageField(blank=True, null=True)
 
     objects = UserManager()
 
