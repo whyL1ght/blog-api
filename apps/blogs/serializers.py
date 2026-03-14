@@ -1,5 +1,12 @@
+# Django modules
+from django.utils.timezone import localtime
+from django.utils.formats import date_format
 # DRF modules
-from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField
+from rest_framework.serializers import (
+    ModelSerializer, 
+    PrimaryKeyRelatedField, 
+    SerializerMethodField,
+)
 # Project modules
 from .models import (
     Category,
@@ -11,9 +18,14 @@ from apps.users.serializers import UserSerializer
 
 
 class CategorySerializer(ModelSerializer):
+    name = SerializerMethodField()
+
     class Meta:
         model = Category
         fields = ["id", "name", "slug"]
+
+    def get_name(self, obj: Category) -> str:
+        return obj.get_name()
 
 
 class TagSerializer(ModelSerializer):
@@ -35,19 +47,34 @@ class PostListSerializer(ModelSerializer):
     author = UserSerializer(read_only=True)
     category = CategorySerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
+    created_at_formatted = SerializerMethodField()
+    updated_at_formatted = SerializerMethodField()
 
     class Meta:
         model = Post
         fields = ["id", "author", "category", "tags", "title", "slug", 
-                  "status", "created_at", "updated_at"
+                  "status", "created_at", "updated_at", "created_at_formatted",
+                  "updated_at_formatted",
         ]
-        read_only_fields = ["id", "slug", "author", "created_at", "updated_at"]
+        read_only_fields = [
+            "id", "slug", "author", "created_at", "updated_at", 
+            "created_at_formatted","updated_at_formatted",]
+
+    def get_created_at_formatted(self, obj: Post) -> str:
+        local_dt = localtime(obj.created_at)
+        return date_format(local_dt, "DATETIME_FORMAT")
+ 
+    def get_updated_at_formatted(self, obj: Post) -> str:
+        local_dt = localtime(obj.updated_at)
+        return date_format(local_dt, "DATETIME_FORMAT")
 
 
-class PostDetailSerialize(ModelSerializer):
+class PostDetailSerializer(ModelSerializer):
     author = UserSerializer(read_only=True)
     category = CategorySerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
+    created_at_formatted = SerializerMethodField()
+    updated_at_formatted = SerializerMethodField()
 
     category_id = PrimaryKeyRelatedField(
         queryset = Category.objects.all(),
@@ -68,23 +95,20 @@ class PostDetailSerialize(ModelSerializer):
         model = Post
         fields = ["id", "author", "category", "category_id", "tags", 
                   "tag_ids", "title", "slug", "body", "status",
-                  "created_at", "updated_at",
-        ]
-        read_only_fields = ["id", "slug", "author", "created_at", "updated_at"]
+                  "created_at", "updated_at", "created_at_formatted",
+                  "updated_at_formatted",
 
-    def create(self, validated_data):
-        tags = validated_data.pop("tags", [])
-        post = Post.objects.create(**validated_data)
-        post.tags.set(tags)
-        return post
-    
-    def update(self, instance, validated_data):
-        tags = validated_data.pop("tags", None)
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        
-        if tags is not None:
-            instance.tags.set(tags)
-        return instance
+        ]
+        read_only_fields = [
+            "id", "slug", "author", "created_at", "updated_at",
+            "created_at_formatted", "updated_at_formatted",
+            ]
+
+    def get_created_at_formatted(self, obj: "Post") -> str:
+        local_dt = localtime(obj.created_at)
+        return date_format(local_dt, "DATETIME_FORMAT")
+
+    def get_updated_at_formatted(self, obj: "Post") -> str: 
+        local_dt = localtime(obj.updated_at)
+        return date_format(local_dt, "DATETIME_FORMAT")
 

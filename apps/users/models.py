@@ -11,6 +11,7 @@ from django.db.models import (
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 
 class UserManager(BaseUserManager):
@@ -88,16 +89,28 @@ class User(AbstractBaseUser, PermissionsMixin):
     """
     Custom user model that uses email field as login
     """
-    FIRST_NAME_MAX_LENGHT = 50
-    LAST_NAME_MAX_LENGHT = 50
+    FIRST_NAME_MAX_LENGTH = 50
+    LAST_NAME_MAX_LENGTH = 50
+    LANGUAGE_MAX_LENGTH = 10
+    TIMEZONE_MAX_LENGTH = 50
+    LANGUAGE_CHOICES = [
+        ("en", _("English")),
+        ("ru", _("Russian")),
+        ("kk", _("Kazakh")),
+    ]
 
-    email = EmailField(unique=True, verbose_name="Email address")
-    first_name = CharField(max_length=FIRST_NAME_MAX_LENGHT, verbose_name="First Name")
-    last_name = CharField(max_length=LAST_NAME_MAX_LENGHT, verbose_name="Last Name")
+    email = EmailField(unique=True, verbose_name=_("Email address"))
+    first_name = CharField(max_length=FIRST_NAME_MAX_LENGTH, verbose_name=_("First Name"))
+    last_name = CharField(max_length=LAST_NAME_MAX_LENGTH, verbose_name=_("Last Name"))
     is_active = BooleanField(default=True)
     is_staff = BooleanField(default=False)
     date_joined = DateTimeField(default=timezone.now)
     avatar = ImageField(blank=True, null=True)
+    language = CharField(
+        max_length=LANGUAGE_MAX_LENGTH, choices=LANGUAGE_CHOICES, 
+        default="en", verbose_name="Preferred language",
+        )
+    timezone = CharField(max_length=TIMEZONE_MAX_LENGTH, default="UTC", verbose_name=_("Timezone"),)
 
     objects = UserManager()
 
@@ -106,8 +119,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ["first_name", "last_name"]
 
     class Meta:
-        verbose_name = "User"
-        verbose_name_plural = "Users"
+        verbose_name = _("User")
+        verbose_name_plural = _("Users")
+        ordering = ["date_joined"]
 
     def __str__(self) -> str:
         return f"{self.email}"
