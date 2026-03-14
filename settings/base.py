@@ -29,6 +29,7 @@ DJANGO_AND_THIRD_PARTY_APPS = [
     'django.contrib.staticfiles',
     "rest_framework",
     "rest_framework_simplejwt",
+    "drf_spectacular",
 ]
 
 PROJECT_APPS = [
@@ -45,17 +46,19 @@ INSTALLED_APPS = DJANGO_AND_THIRD_PARTY_APPS + PROJECT_APPS
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'apps.users.middlewares.LanguageAndTimezoneMiddleware',
 ]
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -96,6 +99,21 @@ REST_FRAMEWORK = {
         "token": "10/min",
         "post_create": "20/min",
     },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Blog API',
+    'DESCRIPTION': 'Blog for django-advanced course',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+
+    "TAGS": [
+        {"name": "Auth", "description": "Authentication and user preferences"},
+        {"name": "Posts", "description": "Blog posts management"},
+        {"name": "Comments", "description": "Post comments"},
+        {"name": "Stats", "description": "Statistics endpoints"},
+    ],
 }
 
 SIMPLE_JWT = {
@@ -188,13 +206,29 @@ LOGGING = {
 # ----------------------------------------------
 # Internationalization
 #
-LANGUAGE_CODE = 'en-us'
+
+LANGUAGES = [
+    ("en", "English"),
+    ("ru", "Russian"),
+    ("kk", "Kazakh"),
+]
+
+LANGUAGE_CODE = 'en'
 
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
 USE_TZ = True
+
+LOCALE_PATHS = [BASE_DIR / "locale"]
+
+
+# ----------------------------------------------
+# EMAIL
+#
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "noreply@local.blog"
 
 
 # ----------------------------------------------
