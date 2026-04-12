@@ -9,5 +9,5 @@ ENV/
 # Django stuff
 db.sqlite3
 logs/
-
+celerybeat-schedule.db
 !env/

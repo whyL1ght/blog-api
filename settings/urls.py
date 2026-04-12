@@ -10,6 +10,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("", include("apps.users.urls")),
     path("blog/", include("apps.blogs.urls")),
+    path("api/posts/stream/", include("apps.notifications.sse_urls")),
+    path("api/notifications/", include("apps.notifications.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "api/docs/swagger-ui/",

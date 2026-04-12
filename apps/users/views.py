@@ -8,31 +8,32 @@ from rest_framework.serializers import CharField, ListField
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.serializers import CharField, ListField
 from rest_framework.status import (
-    HTTP_201_CREATED, 
+    HTTP_201_CREATED,
     HTTP_400_BAD_REQUEST,
     HTTP_429_TOO_MANY_REQUESTS,
     HTTP_200_OK,
     HTTP_401_UNAUTHORIZED,
-    )
+)
 from rest_framework.decorators import action
 from drf_spectacular.utils import (
-    extend_schema, 
-    OpenApiExample, 
-    extend_schema_view, 
+    extend_schema,
+    OpenApiExample,
+    extend_schema_view,
     inline_serializer,
 )
 # Django modules
 from django.shortcuts import render
+from django.db import transaction
 
 from apps.blogs.throttles import RegisterRateThrottle
 # Project modules
 from .serializers import (
-    RegisterSerializer, 
+    RegisterSerializer,
     UserSerializer,
     LanguageUpdateSerializer,
     TimezoneUpdateSerializer,
 )
-from .emails import send_welcome_email
+from .tasks import send_welcome_email
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,6 @@ class RegisterViewSet(CreateModelMixin, GenericViewSet):
     permission_classes = [AllowAny]
     serializer_class = RegisterSerializer
     throttle_classes = [RegisterRateThrottle]
-
 
     @extend_schema(
         summary="Register a new user",
@@ -130,17 +130,15 @@ class RegisterViewSet(CreateModelMixin, GenericViewSet):
                 "Registration failed for email: %s - errors: %s",
                 email, serializer.errors,
             )
-            return Response(serializer.errrors,status=HTTP_400_BAD_REQUEST)
-        
-        user = serializer.save()
-        logger.info("User successfully registered: %s (id=%s)", user.email, user.pk)
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
-        try:
-            send_welcome_email(user)
-            logger.info("Welcome email sent to: %s (lang=%s)", user.email, user.pk)
-        except Exception:
-            logger.exception("Failed to send welcome email to: %s", user.email)
-        
+        user = serializer.save()
+        logger.info("User successfully registered: %s (id=%s)",
+                    user.email, user.pk)
+
+        transaction.on_commit(
+            lambda: send_welcome_email.delay(user_id=user.pk))
+        logger.info("Welcome email task queue for %s", user.email)
         return Response(
             {
                 "user": UserSerializer(user).data,
@@ -148,7 +146,7 @@ class RegisterViewSet(CreateModelMixin, GenericViewSet):
             },
             status=HTTP_201_CREATED,
         )
-    
+
 
 @extend_schema(tags=["Auth"])
 class UserPreferencesViewSet(ViewSet):
@@ -181,7 +179,8 @@ class UserPreferencesViewSet(ViewSet):
             ),
         },
         examples=[
-            OpenApiExample("Set English", value={"language": "en"}, request_only=True),
+            OpenApiExample("Set English", value={
+                           "language": "en"}, request_only=True),
             OpenApiExample(
                 "Success",
                 value={"language": "en"},
@@ -197,10 +196,10 @@ class UserPreferencesViewSet(ViewSet):
         )
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        logger.info("Language updated to '%s' for user: %s", user.language, user.email) # type: ignore
-        return Response({"language": user.language}) # type: ignore
-    
-    
+        logger.info("Language updated to '%s' for user: %s",
+                    user.language, user.email)  # type: ignore
+        return Response({"language": user.language})  # type: ignore
+
     @extend_schema(
         summary="Update user timezone",
         description=(
@@ -224,7 +223,8 @@ class UserPreferencesViewSet(ViewSet):
             ),
         },
         examples=[
-            OpenApiExample("Set Almaty timezone", value={"timezone": "Asia/Almaty"}, request_only=True),
+            OpenApiExample("Set Almaty timezone", value={
+                           "timezone": "Asia/Almaty"}, request_only=True),
             OpenApiExample(
                 "Success",
                 value={"timezone": "Asia/Almaty"},
@@ -240,10 +240,6 @@ class UserPreferencesViewSet(ViewSet):
         )
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        logger.info("Timezone updated to '%s' for user: '%s'", user.timezone, user.email) # type: ignore
+        logger.info("Timezone updated to '%s' for user: '%s'",
+                    user.timezone, user.email)  # type: ignore
         return Response({"timezone": user.timezone})    # type: ignore
-    
-
-
-
-        
