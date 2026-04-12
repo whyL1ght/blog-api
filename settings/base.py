@@ -21,6 +21,7 @@ LOGS_DIR.mkdir(exist_ok=True)
 # Apps
 #
 DJANGO_AND_THIRD_PARTY_APPS = [
+    "channels",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -35,6 +36,7 @@ DJANGO_AND_THIRD_PARTY_APPS = [
 PROJECT_APPS = [
     "apps.users",
     "apps.blogs",
+    "apps.notifications",
 ]
 
 INSTALLED_APPS = DJANGO_AND_THIRD_PARTY_APPS + PROJECT_APPS
@@ -122,7 +124,7 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "AUTH_HEADER_TYPES": ("JWT",),
 
-    }
+}
 
 
 # ----------------------------------------------
@@ -137,6 +139,21 @@ CACHES = {
         }
     }
 }
+REDIS_URL = os.environ.get("BLOG_REDIS_URL", "redis://127.0.0.1:6379/0")
+
+
+# ----------------------------------------------
+# CHANNEL_LAYERS
+#
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+        },
+    },
+}
+
 
 # ----------------------------------------------
 # LOGGING
@@ -169,16 +186,16 @@ LOGGING = {
         'file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'logs/django.log',
-            'maxBytes': 5 * 1024 * 1024,  
-            'backupCount': 5,  
+            'filename': LOGS_DIR / 'django.log',
+            'maxBytes': 5 * 1024 * 1024,
+            'backupCount': 5,
             'formatter': 'verbose',
         },
-        "debug_request_files":{
+        "debug_request_files": {
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'logs/debug_requests.log',
+            'filename': LOGS_DIR / 'debug_requests.log',
             "level": "DEBUG",
-            'maxBytes': 5 * 1024 * 1024, 
+            'maxBytes': 5 * 1024 * 1024,
             'backupCount': 2,
             'formatter': 'verbose',
             "filters": ["require_debug_true"],
@@ -186,7 +203,7 @@ LOGGING = {
     },
     "loggers": {
         "users": {
-            "handlers": ["console","file"],
+            "handlers": ["console", "file"],
             "level": "DEBUG",
             "propagate": False,
         },
@@ -195,13 +212,25 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": False,
         },
-        "django.request":{
+        "django.request": {
             "handlers": ["file", "debug_request_files"],
             "level": "WARNING",
             "propagate": False,
         }
     },
 }
+
+# ----------------------------------------------
+# Celery Configuration
+#
+CELERY_BROKER_URL = os.environ.get("BLOG_CELERY_BROKER_URL", "redis://127.0.0.1:6379/1")
+CELERY_RESULT_BACKEND = os.environ.get("BLOG_CELERY_BROKER_URL", "redis://127.0.0.1:6379/1")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
 
 # ----------------------------------------------
 # Internationalization
