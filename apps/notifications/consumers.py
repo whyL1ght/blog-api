@@ -19,11 +19,11 @@ class CommentConsumer(AsyncWebsocketConsumer):
     """
 
     async def connect(self):
-        slug = self.scope["url_route"]["kwargs"]["slug"]   # type: ignore
+        slug = self.scope["url_route"]["kwargs"]["slug"]
 
         user = await self._authenticate()
         if user is None:
-            await self.scope(code=4001)   # type: ignore
+            await self.close(code=4001)  # было self.scope(code=4001)
             return
 
         post_exists = await self._post_exists(slug)

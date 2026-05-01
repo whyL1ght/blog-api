@@ -7,10 +7,10 @@ done
 echo "Redis is ready!"
 
 python3 manage.py migrate --noinput
-python3 manage.py collectstatics --noinput
+python3 manage.py collectstatic --noinput
 python3 manage.py compilemessages || true
 
-if ["${BLOG_SEED_DB}" = "true"]; then
+if [ "${BLOG_SEED_DB}" = "true" ]; then
     echo "Seeding db.."
     python3 manage.py seed
 fi
