@@ -98,6 +98,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_THROTTLE_RATES": {
         "register": "5/min",
+        "login": "5/min",
         "token": "10/min",
         "post_create": "20/min",
     },
@@ -264,6 +265,7 @@ DEFAULT_FROM_EMAIL = "noreply@local.blog"
 # Static | Media
 #
 STATIC_URL = 'static/'
+STATIC_ROOT = "/var/www/static"
 
 DEBUG = True
 
